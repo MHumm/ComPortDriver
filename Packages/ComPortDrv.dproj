@@ -118,7 +118,6 @@
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="..\Source\CPDrv.pas"/>
-        <DCCReference Include="..\Source\SerialPorts.pas"/>
         <RcItem Include="..\Images\TCommPortDriver16.png">
             <ResourceType>RCDATA</ResourceType>
             <ResourceId>TCommPortDriver16_PNG</ResourceId>
@@ -172,7 +171,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\21.0\Bpl\ComPortDrv.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\21.0\Bpl\ComPortDrv270.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>ComPortDrv.bpl</RemoteName>
                         <Overwrite>true</Overwrite>

@@ -35,7 +35,6 @@ requires
   rtl;
 
 contains
-  CPDrv in '..\Source\CPDrv.pas',
-  SerialPorts in '..\Source\SerialPorts.pas';
+  CPDrv in '..\Source\CPDrv.pas';
 
 end.
