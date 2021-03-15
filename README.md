@@ -12,12 +12,13 @@ Changes in this V3.0 Beta release compared with 2.1:
 * fix non packet mode for higher baudrates: the old version didn't check if the buffer the received data 
   shall be written into is large enough. The new version calls the received event in a loop until all data
   has been received and signalled to avoid memory corruption
-* the maximum buffer size has been increased from 8192 to 32768 byte
-* SetCommBreak   and ClearCommBreak functions for sending a break signal have been added
+* the maximum buffer size has been increased from 8192 (8 kb) to 65536 byte (64 kb)
+* SetCommBreak and ClearCommBreak functions for sending a break signal have been added
 * EnumComPorts to get a list of available COM-ports has been added. This is a list of port names only 
   without the description or friendly name.
 * Properties for getting the minimum and maximum transmit and receive buffer sizes have been added
 * The source code is XMLDOC commented now
+* changed license to Apache 2.0
 
 Installation:
 Open BuildPackages from the package subdirectory. Compile the runtime package (the first one)

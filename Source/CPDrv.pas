@@ -747,6 +747,9 @@ function BaudRateOf(bRate: TBaudRate): DWORD;
 /// <returns>
 ///   Time in ms it takes to receive or send this amount of data
 /// </returns>
+{ TODO :
+Move this into the class and make it use the current serial port settings
+regarding stopbits and parity etc. }
 function DelayForRX(bRate: TBaudRate; DataSize: DWORD): DWORD;
 
 implementation
@@ -789,11 +792,11 @@ const
   /// <summary>
   ///   Maximum size of the receive buffer in byte
   /// </summary>
-  cMaxRXBufferSize = 65536;
+  cMaxRXBufferSize = 65535;
   /// <summary>
   ///   Maximum size of the transmit buffer in byte
   /// </summary>
-  cMaxTXBufferSize = 65536;
+  cMaxTXBufferSize = 65535;
   /// <summary>
   ///   Minimum size of the receive buffer in byte
   /// </summary>
