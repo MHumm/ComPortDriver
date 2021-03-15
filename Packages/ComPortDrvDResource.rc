@@ -1,0 +1,5 @@
+TCommPortDriver16_PNG RCDATA "..\\Images\\TCommPortDriver16.png"
+TCommPortDriver_PNG RCDATA "..\\Images\\TCommPortDriver24.png"
+TCommPortDriver32_PNG RCDATA "..\\Images\\TCommPortDriver32.png"
+TCommPortDriver48_PNG RCDATA "..\\Images\\TCommPortDriver48.png"
+TCommPortDriver64_PNG RCDATA "..\\Images\\TCommPortDriver64.png"

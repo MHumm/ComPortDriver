@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{30BE372F-D9DD-460C-8317-3085FFBDFC11}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="ComPortDrv.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="ComPortDrvD.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="ComPortDrv">
+        <MSBuild Projects="ComPortDrv.dproj"/>
+    </Target>
+    <Target Name="ComPortDrv:Clean">
+        <MSBuild Projects="ComPortDrv.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ComPortDrv:Make">
+        <MSBuild Projects="ComPortDrv.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ComPortDrvD">
+        <MSBuild Projects="ComPortDrvD.dproj"/>
+    </Target>
+    <Target Name="ComPortDrvD:Clean">
+        <MSBuild Projects="ComPortDrvD.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ComPortDrvD:Make">
+        <MSBuild Projects="ComPortDrvD.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="ComPortDrv;ComPortDrvD"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="ComPortDrv:Clean;ComPortDrvD:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="ComPortDrv:Make;ComPortDrvD:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
