@@ -597,12 +597,39 @@ type
     /// </param>
     procedure EnumComPorts(ComPorts:TStrings);
 
-    /// <summary>    
+    /// <summary>
+    ///   Delivers the Windows API baudrate constant value for a given TBaudrate
+    ///   enumeration value.
+    /// </summary>
+    /// <param name="bRate">
+    ///   Enumeration value for which to return the Windows API constant value
+    /// </param>
+    /// <returns>
+    ///   Windows API constant value or 0 if bRate = brCustom
+    /// </returns>
+    function BaudRateOf(bRate: TBaudRate): DWORD;
+    /// <summary>
+    ///   Calculates the time in ms it takes to receive a certain number of bytes at
+    ///   a certain baudrate. The calculation is based on the current serial settings:
+    ///   databits per byte, number of stoppbits and parity.
+    /// </summary>
+    /// <param name="bRate">
+    ///   Baudrate enumeration value
+    /// </param>
+    /// <param name="DataSize">
+    ///   Number of bytes to send or receive
+    /// </param>
+    /// <returns>
+    ///   Time in ms it takes to receive or send this amount of data
+    /// </returns>
+    function DelayForRX(bRate: TBaudRate; DataSize: DWORD): DWORD;
+
+    /// <summary>
     ///   Handle of the COM port (for TAPI...) [read/write]
-    /// </summary>    
+    /// </summary>
     property Handle: HFILE read FHandle write SetHandle;
   published
-    /// <summary>      
+    /// <summary>
     ///   Number of the COM Port to use (or pnCustom for port by name)
     /// </summary>
     property Port: TPortNumber read FPort write SetPort default pnCOM2;
@@ -721,37 +748,6 @@ type
       read   GetMinTXBufferSize;
   end;
 
-/// <summary>
-///   Delivers the Windows API baudrate constant value for a given TBaudrate 
-///   enumeration value.
-/// </summary>
-/// <param name="bRate">
-///   Enumeration value for which to return the Windows API constant value
-/// </param>
-/// <returns>
-///   Windows API constant value or 0 if bRate = brCustom
-/// </returns>
-function BaudRateOf(bRate: TBaudRate): DWORD;
-/// <summary>
-///   Calculates the time in ms it takes to receive a certain number of bytes at 
-///   a certain baudrate. The calculation is correct only for serial settings
-///   of 8 databits with 1 start and 1 stopbit and no parity. Otherwise the 
-///   calculation is of between 10-30%.
-/// </summary>
-/// <param name="bRate">
-///   Baudrate enumeration value
-/// </param>
-/// <param name="DataSize">
-///   Number of bytes to send or receive
-/// </param>
-/// <returns>
-///   Time in ms it takes to receive or send this amount of data
-/// </returns>
-{ TODO :
-Move this into the class and make it use the current serial port settings
-regarding stopbits and parity etc. }
-function DelayForRX(bRate: TBaudRate; DataSize: DWORD): DWORD;
-
 implementation
 
 uses
@@ -837,7 +833,7 @@ begin
     Result := $00000000;
 end;
 
-function BaudRateOf(bRate: TBaudRate): DWORD;
+function TCommPortDriver.BaudRateOf(bRate: TBaudRate): DWORD;
 begin
   if bRate = brCustom then
     Result := 0
@@ -845,9 +841,31 @@ begin
     Result := Win32BaudRates[bRate];
 end;
 
-function DelayForRX(bRate: TBaudRate; DataSize: DWORD): DWORD;
+function TCommPortDriver.DelayForRX(bRate: TBaudRate; DataSize: DWORD): DWORD;
+var
+  BitsForByte : Single;
 begin
-  Result := round(DataSize / (BaudRateOf(bRate) / 10) * 1000);
+  BitsForByte := 10;
+
+  case FStopBits of
+    sb1HALFBITS : BitsForByte := BitsForByte + 1.5;
+    sb2BITS     : BitsForByte := BitsForByte + 2;
+    else
+      ;
+  end;
+
+  if FParity <> TParity.ptNONE then
+    BitsForByte := BitsForByte + 1;
+
+  case DataBits of
+    db5BITS: BitsForByte := BitsForByte - 3;
+    db6BITS: BitsForByte := BitsForByte - 2;
+    db7BITS: BitsForByte := BitsForByte - 1;
+    else
+      ;
+  end;
+
+  Result := round(DataSize / (BaudRateOf(bRate) / BitsForByte) * 1000);
 end;
 
 constructor TCommPortDriver.Create(AOwner: TComponent);
