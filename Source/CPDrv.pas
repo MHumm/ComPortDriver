@@ -611,18 +611,15 @@ type
     /// <summary>
     ///   Calculates the time in ms it takes to receive a certain number of bytes at
     ///   a certain baudrate. The calculation is based on the current serial settings:
-    ///   databits per byte, number of stoppbits and parity.
+    ///   baudrate, databits per byte, number of stoppbits and parity.
     /// </summary>
-    /// <param name="bRate">
-    ///   Baudrate enumeration value
-    /// </param>
     /// <param name="DataSize">
     ///   Number of bytes to send or receive
     /// </param>
     /// <returns>
     ///   Time in ms it takes to receive or send this amount of data
     /// </returns>
-    function DelayForRX(bRate: TBaudRate; DataSize: DWORD): DWORD;
+    function DelayForRX(DataSize: DWORD): DWORD;
 
     /// <summary>
     ///   Handle of the COM port (for TAPI...) [read/write]
@@ -841,7 +838,7 @@ begin
     Result := Win32BaudRates[bRate];
 end;
 
-function TCommPortDriver.DelayForRX(bRate: TBaudRate; DataSize: DWORD): DWORD;
+function TCommPortDriver.DelayForRX(DataSize: DWORD): DWORD;
 var
   BitsForByte : Single;
 begin
@@ -865,7 +862,7 @@ begin
       ;
   end;
 
-  Result := round(DataSize / (BaudRateOf(bRate) / BitsForByte) * 1000);
+  Result := round(DataSize / (FBaudRateValue / BitsForByte) * 1000);
 end;
 
 constructor TCommPortDriver.Create(AOwner: TComponent);
@@ -1619,7 +1616,7 @@ begin
           // Adjust time
           //if comStat.cbInQue >= FPacketSize then
             FFirstByteOfPacketTime := FFirstByteOfPacketTime +
-                                      DelayForRX(FBaudRate, FPacketSize);
+                                      DelayForRX(FPacketSize);
           comStat.cbInQue := comStat.cbInQue - WORD(FPacketSize);
           if comStat.cbInQue = 0 then
             FFirstByteOfPacketTime := DWORD(-1);
