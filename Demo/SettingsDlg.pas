@@ -103,7 +103,7 @@ begin
     exit;
   end;
   // Apply new settings
-  FCPDrv.PortName := AnsiString(newPortName);
+  FCPDrv.PortName := newPortName;
   FCPDrv.BaudRateValue := newBaudRate;
   FCPDrv.DataBits := TDataBits( DataBitsComboBox.ItemIndex );
   FCPDrv.Parity := TParity( ParityComboBox.ItemIndex );
