@@ -3,7 +3,13 @@
 *.dpr     text
 *.dproj   text
 *.dfm     text
+*.dpk     text
 *.fmx     text
 *.local   text
 *.inc     text
 *.txt     text
+*.md      text
+*.toc     text
+*.cnt     text
+*.rc      text
+*.groupproj text
