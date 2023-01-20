@@ -2,14 +2,14 @@
 //------------------------------------------------------------------------
 // UNIT           : CPDrv.pas
 // CONTENTS       : TCommPortDriver component
-// VERSION        : 3.0
+// VERSION        : 3.1
 // TARGET         : Embarcadero Delphi 10.3 Rio or higher
 // AUTHOR         : Original author: Marco Cocco, updated/enhanced by Markus Humm
 // STATUS         : Open source under Apache 2.0 library
 // INFOS          : Implementation of TCommPortDriver component:
 //                  - non multithreaded serial I/O
 // KNOWN BUGS     : none
-// COMPATIBILITY  : Windows 7, 8/8.1, 10
+// COMPATIBILITY  : Windows 7, 8/8.1, 10, 11
 // REPLACES       : TCommPortDriver v2.00    (Delphi 4.0)
 //                  TCommPortDriver v1.08/16 (Delphi 1.0)
 //                  TCommPortDriver v1.08/32 (Delphi 2.0/3.0)
@@ -157,7 +157,7 @@ type
     /// <summary>
     ///   Device Handle (File Handle)
     /// </summary>
-    FHandle                    : HFILE;
+    FHandle                    : THandle;
     /// <summary>
     ///   # of the COM port to use, or pnCustom to use custom port name
     /// </summary>
@@ -258,6 +258,12 @@ type
     ///   Number of RX polling timer pauses
     /// </summary>
     FRXPollingPauses           : Integer;
+    /// <summary>
+    ///   Flag used to guard against nested timer events which can be caused
+    ///   if somebody calls something in such an event which queries/polls
+    ///   Windows messages, like a call to MessageDlg.
+    /// </summary>
+    FIsInOnTimer               : Boolean;
 
     /// <summary>
     ///   Sets the COM port handle
@@ -265,7 +271,7 @@ type
     /// <param name="Value">
     ///   File handle to the port
     /// </param>
-    procedure SetHandle(Value: HFILE);
+    procedure SetHandle(Value: THandle);
     /// <summary>
     ///   Selects the COM port to use
     /// </summary>
@@ -624,7 +630,7 @@ type
     /// <summary>
     ///   Handle of the COM port (for TAPI...) [read/write]
     /// </summary>
-    property Handle: HFILE read FHandle write SetHandle;
+    property Handle: THandle read FHandle write SetHandle;
   published
     /// <summary>
     ///   Number of the COM Port to use (or pnCustom for port by name)
@@ -907,13 +913,16 @@ begin
   FFirstByteOfPacketTime     := DWORD(-1);
   // Don't check of off-line devices
   FCkLineStatus              := false;
+  // We are not in the timer event used to poll the port
+  FIsInOnTimer               := false;
   // Init number of RX polling timer pauses - not paused
-  FRXPollingPauses := 0;
-  // Temporary buffer for received data 
+  FRXPollingPauses           := 0;
+  // Temporary buffer for received data
   FTempInBuffer := AllocMem(FInBufSize);
   // Allocate a window handle to catch timer's notification messages
   if not (csDesigning in ComponentState) then
     FNotifyWnd := AllocateHWnd(TimerWndProc);
+
 end;
 
 destructor TCommPortDriver.Destroy;
@@ -932,7 +941,7 @@ end;
 // The COM port handle made public and writeable.
 // This lets you connect to external opened com port.
 // Setting ComPortHandle to INVALID_PORT_HANDLE acts as Disconnect.
-procedure TCommPortDriver.SetHandle(Value: HFILE);
+procedure TCommPortDriver.SetHandle(Value: THandle);
 begin
   // If same COM port then do nothing
   if FHandle = Value then
@@ -1596,76 +1605,85 @@ var nRead, nToRead, nToReadBuf, dummy: DWORD;
 begin
   if (msg.Msg = WM_TIMER) and Connected then
   begin
-    // Do nothing if RX polling has been paused 
-    if FRXPollingPauses > 0 then
-      exit;
-    // If PacketSize is > 0 then raise the OnReceiveData event only if the RX
-    // buffer has at least PacketSize bytes in it.
-    ClearCommError(FHandle, dummy, @comStat);
-    if FPacketSize > 0 then
-    begin
-      // Complete packet received ?
-      if DWORD(comStat.cbInQue) >= DWORD(FPacketSize) then
-      begin
-        repeat
-          // Read the packet and pass it to the app
-          nRead := 0;
-          if ReadFile(FHandle, FTempInBuffer^, FPacketSize, nRead, nil) then
-            if (nRead <> 0) and Assigned(FOnReceivePacket) then
-              FOnReceivePacket(Self, FTempInBuffer, nRead);
-          // Adjust time
-          //if comStat.cbInQue >= FPacketSize then
-            FFirstByteOfPacketTime := FFirstByteOfPacketTime +
-                                      DelayForRX(FPacketSize);
-          comStat.cbInQue := comStat.cbInQue - WORD(FPacketSize);
-          if comStat.cbInQue = 0 then
+    if not FIsInOnTimer then
+      try
+        // Set flag to prevent reetrant calling of this method
+        FIsInOnTimer := true;
+
+        // Do nothing if RX polling has been paused
+        if FRXPollingPauses > 0 then
+          exit;
+        // If PacketSize is > 0 then raise the OnReceiveData event only if the RX
+        // buffer has at least PacketSize bytes in it.
+        ClearCommError(FHandle, dummy, @comStat);
+        if FPacketSize > 0 then
+        begin
+          // Complete packet received ?
+          if DWORD(comStat.cbInQue) >= DWORD(FPacketSize) then
+          begin
+            repeat
+              // Read the packet and pass it to the app
+              nRead := 0;
+              if ReadFile(FHandle, FTempInBuffer^, FPacketSize, nRead, nil) then
+                if (nRead <> 0) and Assigned(FOnReceivePacket) then
+                  FOnReceivePacket(Self, FTempInBuffer, nRead);
+              // Adjust time
+              //if comStat.cbInQue >= FPacketSize then
+                FFirstByteOfPacketTime := FFirstByteOfPacketTime +
+                                          DelayForRX(FPacketSize);
+              comStat.cbInQue := comStat.cbInQue - WORD(FPacketSize);
+              if comStat.cbInQue = 0 then
+                FFirstByteOfPacketTime := DWORD(-1);
+            until DWORD(comStat.cbInQue) < DWORD(FPacketSize);
+            // Done
+            exit;
+          end;
+          // Handle packet timeouts
+          if (FPacketTimeout > 0) and (FFirstByteOfPacketTime <> DWORD(-1)) and
+             (GetTickCount - FFirstByteOfPacketTime > DWORD(FPacketTimeout)) then
+          begin
+            nRead := 0;
+            // Read the "incomplete" packet
+            if ReadFile(FHandle, FTempInBuffer^, comStat.cbInQue, nRead, nil) then
+              // If PacketMode is not pmDiscard then pass the packet to the app
+              if (FPacketMode <> pmDiscard) and (nRead <> 0) and Assigned(FOnReceivePacket) then
+                FOnReceivePacket(Self, FTempInBuffer, nRead);
+            // Restart waiting for a packet
             FFirstByteOfPacketTime := DWORD(-1);
-        until DWORD(comStat.cbInQue) < DWORD(FPacketSize);
-        // Done
-        exit;
+            // Done
+            exit;
+          end;
+          // Start time
+          if (comStat.cbInQue > 0) and (FFirstByteOfPacketTime = DWORD(-1)) then
+            FFirstByteOfPacketTime := GetTickCount;
+          // Done
+          exit;
+        end;
+
+        // Standard data handling
+        nRead   := 0;
+        nToRead := comStat.cbInQue;
+
+        while (nToRead > 0) do
+        begin
+          nToReadBuf := nToRead;
+          if (nToReadBuf > FInBufSize) then
+            nToReadBuf := FInBufSize;
+
+          if ReadFile(FHandle, FTempInBuffer^, nToReadBuf, nRead, nil) then
+          begin
+            if (nRead <> 0) and Assigned(FOnReceiveData) then
+              FOnReceiveData(Self, FTempInBuffer, nRead);
+          end
+          else
+            break;
+
+          dec(nToRead, nRead);
+        end;
+      finally
+        // Allow calling this timer event again
+        FIsInOnTimer := false;
       end;
-      // Handle packet timeouts
-      if (FPacketTimeout > 0) and (FFirstByteOfPacketTime <> DWORD(-1)) and
-         (GetTickCount - FFirstByteOfPacketTime > DWORD(FPacketTimeout)) then
-      begin
-        nRead := 0;
-        // Read the "incomplete" packet
-        if ReadFile(FHandle, FTempInBuffer^, comStat.cbInQue, nRead, nil) then
-          // If PacketMode is not pmDiscard then pass the packet to the app
-          if (FPacketMode <> pmDiscard) and (nRead <> 0) and Assigned(FOnReceivePacket) then
-            FOnReceivePacket(Self, FTempInBuffer, nRead);
-        // Restart waiting for a packet 
-        FFirstByteOfPacketTime := DWORD(-1);
-        // Done 
-        exit;
-      end;
-      // Start time 
-      if (comStat.cbInQue > 0) and (FFirstByteOfPacketTime = DWORD(-1)) then
-        FFirstByteOfPacketTime := GetTickCount;
-      // Done 
-      exit;
-    end;
-
-    // Standard data handling 
-    nRead   := 0;
-    nToRead := comStat.cbInQue;
-
-    while (nToRead > 0) do
-    begin
-      nToReadBuf := nToRead;
-      if (nToReadBuf > FInBufSize) then
-        nToReadBuf := FInBufSize;
-
-      if ReadFile(FHandle, FTempInBuffer^, nToReadBuf, nRead, nil) then
-      begin
-        if (nRead <> 0) and Assigned(FOnReceiveData) then
-          FOnReceiveData(Self, FTempInBuffer, nRead);
-      end
-      else
-        break;
-
-      dec(nToRead, nRead);
-    end;
   end
   // Let Windows handle other messages
   else
