@@ -701,9 +701,9 @@ object AboutBoxForm: TAboutBoxForm
       object Label1: TLabel
         Left = 60
         Top = 132
-        Width = 178
+        Width = 206
         Height = 14
-        Caption = #169' 2021 M. Humm. All rights reserved.'
+        Caption = #169' 2021-2025 M. Humm. All rights reserved.'
         Font.Charset = ANSI_CHARSET
         Font.Color = clBlack
         Font.Height = -11
