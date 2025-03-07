@@ -7,7 +7,7 @@ original author. Due to the use of $(AUTO) for the libsuffix it is compatible fr
 If you remove this setting in the package project option of both packages it should work with older 
 versions as well. The code found in SerialPorts.pas is not working yet.
 
-Changes in this V3.0 release compared with 2.1:
+Changes in this V3.1.x release compared with 2.1:
 
 * fix non packet mode for higher baudrates: the old version didn't check if the buffer the received data 
   shall be written into is large enough. The new version calls the received event in a loop until all data
@@ -19,7 +19,9 @@ Changes in this V3.0 release compared with 2.1:
 * Properties for getting the minimum and maximum transmit and receive buffer sizes have been added
 * The source code is XMLDOC commented now
 * changed license to Apache 2.0
+* fixed demo application (there was a Problem with the About Dialog preventing compilation)
 
 Installation:
 Open BuildPackages from the package subdirectory. Compile the runtime package (the first one)
 and then right click on the design time package and call the "Install" menu item in the popup menu.  
+Alternatively install via Tools/GetIt package manager
