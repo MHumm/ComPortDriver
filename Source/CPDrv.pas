@@ -1411,13 +1411,15 @@ function TCommPortDriver.CountRX: integer;
 var stat: TCOMSTAT;
     errs: DWORD;
 begin
-  // Do nothing if port has not been opened 
+  // Do nothing if port has not been opened
   Result := 65535;
   if not Connected then
     exit;
-  // Get count 
-  ClearCommError(FHandle, errs, @stat);
-  Result := stat.cbInQue;
+  // Get count
+  if ClearCommError(FHandle, errs, @stat) then
+    Result := stat.cbInQue
+  else
+    Result := 0;
 end;
 
 // Returns the output buffer free space or 65535 if not connected 
@@ -1429,8 +1431,10 @@ begin
     Result := 65535
   else
   begin
-    ClearCommError(FHandle, errs, @stat);
-    Result := FOutBufSize - stat.cbOutQue;
+    if ClearCommError(FHandle, errs, @stat) then
+      Result := FOutBufSize - stat.cbOutQue
+    else
+      Result := 0;
   end;
 end;
 
