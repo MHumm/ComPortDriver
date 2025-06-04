@@ -1619,70 +1619,72 @@ begin
           exit;
         // If PacketSize is > 0 then raise the OnReceiveData event only if the RX
         // buffer has at least PacketSize bytes in it.
-        ClearCommError(FHandle, dummy, @comStat);
-        if FPacketSize > 0 then
+        if ClearCommError(FHandle, dummy, @comStat) then
         begin
-          // Complete packet received ?
-          if DWORD(comStat.cbInQue) >= DWORD(FPacketSize) then
+          if FPacketSize > 0 then
           begin
-            repeat
-              // Read the packet and pass it to the app
+            // Complete packet received ?
+            if DWORD(comStat.cbInQue) >= DWORD(FPacketSize) then
+            begin
+              repeat
+                // Read the packet and pass it to the app
+                nRead := 0;
+                if ReadFile(FHandle, FTempInBuffer^, FPacketSize, nRead, nil) then
+                  if (nRead <> 0) and Assigned(FOnReceivePacket) then
+                    FOnReceivePacket(Self, FTempInBuffer, nRead);
+                // Adjust time
+                //if comStat.cbInQue >= FPacketSize then
+                  FFirstByteOfPacketTime := FFirstByteOfPacketTime +
+                                            DelayForRX(FPacketSize);
+                comStat.cbInQue := comStat.cbInQue - WORD(FPacketSize);
+                if comStat.cbInQue = 0 then
+                  FFirstByteOfPacketTime := DWORD(-1);
+              until DWORD(comStat.cbInQue) < DWORD(FPacketSize);
+              // Done
+              exit;
+            end;
+            // Handle packet timeouts
+            if (FPacketTimeout > 0) and (FFirstByteOfPacketTime <> DWORD(-1)) and
+               (GetTickCount - FFirstByteOfPacketTime > DWORD(FPacketTimeout)) then
+            begin
               nRead := 0;
-              if ReadFile(FHandle, FTempInBuffer^, FPacketSize, nRead, nil) then
-                if (nRead <> 0) and Assigned(FOnReceivePacket) then
+              // Read the "incomplete" packet
+              if ReadFile(FHandle, FTempInBuffer^, comStat.cbInQue, nRead, nil) then
+                // If PacketMode is not pmDiscard then pass the packet to the app
+                if (FPacketMode <> pmDiscard) and (nRead <> 0) and Assigned(FOnReceivePacket) then
                   FOnReceivePacket(Self, FTempInBuffer, nRead);
-              // Adjust time
-              //if comStat.cbInQue >= FPacketSize then
-                FFirstByteOfPacketTime := FFirstByteOfPacketTime +
-                                          DelayForRX(FPacketSize);
-              comStat.cbInQue := comStat.cbInQue - WORD(FPacketSize);
-              if comStat.cbInQue = 0 then
-                FFirstByteOfPacketTime := DWORD(-1);
-            until DWORD(comStat.cbInQue) < DWORD(FPacketSize);
+              // Restart waiting for a packet
+              FFirstByteOfPacketTime := DWORD(-1);
+              // Done
+              exit;
+            end;
+            // Start time
+            if (comStat.cbInQue > 0) and (FFirstByteOfPacketTime = DWORD(-1)) then
+              FFirstByteOfPacketTime := GetTickCount;
             // Done
             exit;
           end;
-          // Handle packet timeouts
-          if (FPacketTimeout > 0) and (FFirstByteOfPacketTime <> DWORD(-1)) and
-             (GetTickCount - FFirstByteOfPacketTime > DWORD(FPacketTimeout)) then
+
+          // Standard data handling
+          nRead   := 0;
+          nToRead := comStat.cbInQue;
+
+          while (nToRead > 0) do
           begin
-            nRead := 0;
-            // Read the "incomplete" packet
-            if ReadFile(FHandle, FTempInBuffer^, comStat.cbInQue, nRead, nil) then
-              // If PacketMode is not pmDiscard then pass the packet to the app
-              if (FPacketMode <> pmDiscard) and (nRead <> 0) and Assigned(FOnReceivePacket) then
-                FOnReceivePacket(Self, FTempInBuffer, nRead);
-            // Restart waiting for a packet
-            FFirstByteOfPacketTime := DWORD(-1);
-            // Done
-            exit;
+            nToReadBuf := nToRead;
+            if (nToReadBuf > FInBufSize) then
+              nToReadBuf := FInBufSize;
+
+            if ReadFile(FHandle, FTempInBuffer^, nToReadBuf, nRead, nil) then
+            begin
+              if (nRead <> 0) and Assigned(FOnReceiveData) then
+                FOnReceiveData(Self, FTempInBuffer, nRead);
+            end
+            else
+              break;
+
+            dec(nToRead, nRead);
           end;
-          // Start time
-          if (comStat.cbInQue > 0) and (FFirstByteOfPacketTime = DWORD(-1)) then
-            FFirstByteOfPacketTime := GetTickCount;
-          // Done
-          exit;
-        end;
-
-        // Standard data handling
-        nRead   := 0;
-        nToRead := comStat.cbInQue;
-
-        while (nToRead > 0) do
-        begin
-          nToReadBuf := nToRead;
-          if (nToReadBuf > FInBufSize) then
-            nToReadBuf := FInBufSize;
-
-          if ReadFile(FHandle, FTempInBuffer^, nToReadBuf, nRead, nil) then
-          begin
-            if (nRead <> 0) and Assigned(FOnReceiveData) then
-              FOnReceiveData(Self, FTempInBuffer, nRead);
-          end
-          else
-            break;
-
-          dec(nToRead, nRead);
         end;
       finally
         // Allow calling this timer event again
