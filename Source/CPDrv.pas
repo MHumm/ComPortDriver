@@ -2,7 +2,7 @@
 //------------------------------------------------------------------------
 // UNIT           : CPDrv.pas
 // CONTENTS       : TCommPortDriver component
-// VERSION        : 3.1
+// VERSION        : 3.2
 // TARGET         : Embarcadero Delphi 10.3 Rio or higher
 // AUTHOR         : Original author: Marco Cocco, updated/enhanced by Markus Humm
 // STATUS         : Open source under Apache 2.0 library
