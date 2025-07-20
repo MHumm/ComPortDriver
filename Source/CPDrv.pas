@@ -118,6 +118,20 @@ type
   /// </param>
   TReceivePacketEvent = procedure(Sender: TObject; Packet: pointer; DataSize: DWORD) of object;
 
+  /// <summary>
+  ///   Event used for reporting errors
+  /// </summary>
+  /// <param name="Sender">
+  ///   Object calling this eventhandler
+  /// </param>
+  /// <param name="ErrorCode">
+  ///   Code specifying the error
+  /// </param>
+  /// <param name="ErrorText">
+  ///   Text describing the error, usefull for display purposes
+  /// </param>
+  TErrorEvent = procedure(Sender: TObject; ErrorCode: UInt16; const ErrorText: string) of object;
+
 //------------------------------------------------------------------------
 // Other types
 //------------------------------------------------------------------------
@@ -153,7 +167,7 @@ type
   ///   Non visual component for RS232 communications
   /// </summary>
   TCommPortDriver = class(TComponent)
-  protected
+  strict protected
     /// <summary>
     ///   Device Handle (File Handle)
     /// </summary>
@@ -264,6 +278,10 @@ type
     ///   Windows messages, like a call to MessageDlg.
     /// </summary>
     FIsInOnTimer               : Boolean;
+    /// <summary>
+    ///   Event used to report errors
+    /// </summary>
+    FOnError                   : TErrorEvent;
 
     /// <summary>
     ///   Sets the COM port handle
@@ -395,6 +413,28 @@ type
     ///   apropriate receive callbacks if necessary
     /// </summary>
     procedure TimerWndProc(var msg: TMessage);
+    /// <summary>
+    ///   Returns the OnError Eventhandler
+    /// </summary>
+    function  GetOnError: TErrorEvent;
+    /// <summary>
+    ///   Sets the event to be called if an error is encountered
+    /// </summary>
+    /// <param name="Value">
+    ///   Zu setzender Eventhandler
+    /// </param>
+    procedure SetOnError(const Value: TErrorEvent);
+    /// <summary>
+    ///   Reports an error, if the error event is defined
+    /// </summary>
+    /// <param name="ErrorCode">
+    ///   Code specifying the error
+    /// </param>
+    /// <param name="ErrorText">
+    ///   Text describing the error, usefull for display purposes
+    /// </param>
+    procedure ReportError(ErrorCode       : UInt16;
+                          const ErrorText : string);
   public
     /// <summary>
     ///   Constructor
@@ -488,7 +528,7 @@ type
     ///   Number of bytes sent
     /// </returns>
     function SendDataEx(DataPtr: PAnsiChar; DataSize, Timeout: DWORD): DWORD;
-    /// <summary>        
+    /// <summary>
     ///   Sends a byte. Returns true if the byte has been sent
     /// </summary>        
     /// <param name="Value">
@@ -670,41 +710,41 @@ type
     ///   hfRTSCTS        Request-To-Send/Clear-To-Send
     /// </summary>
     property HwFlow: THwFlowControl read FHwFlow write SetHwFlowControl default hfNONERTSON;
-    /// <summary>        
+    /// <summary>
     ///   Kind of Software Flow Control to use:
     ///   sfNONE          none
-    ///   sfXONXOFF       XON/XOFF 
+    ///   sfXONXOFF       XON/XOFF
     /// </summary>
     property SwFlow: TSwFlowControl read FSwFlow write SetSwFlowControl default sfNONE;
-    /// <summary>        
+    /// <summary>
     ///   Input buffer size in byte (suggested - driver might ignore this setting !)
-    /// <summary>        
+    /// <summary>
     property InBufSize: DWORD read FInBufSize write SetInBufSize default 2048;
-    /// <summary>        
+    /// <summary>
     ///   Output buffer size in byte (suggested - driver usually ignores this setting !)
     /// </summary>
     property OutBufSize: DWORD read FOutBufSize write SetOutBufSize default 2048;
-    /// <summary>        
+    /// <summary>
     ///   RX packet size (this value must be less than InBufSize)
     ///   A value <= 0 means "no packet mode" (i.e. standard mode enabled)
-    /// </summary>        
+    /// </summary>
     property PacketSize: smallint read FPacketSize write SetPacketSize default -1;
-    /// <summary>        
+    /// <summary>
     ///   Timeout (ms) for a complete packet (in RX)
-    /// </summary>        
+    /// </summary>
     property PacketTimeout: integer read FPacketTimeout write SetPacketTimeout default -1;
-    /// <summary>        
+    /// <summary>
     ///   What to do with incomplete packets (in RX)
     /// </summary>
     property PacketMode: TPacketMode read FPacketMode write FPacketMode default pmDiscard;
-    /// <summary>        
-    ///   ms of delay between COM port pollings. Since they are handled by  
+    /// <summary>
+    ///   ms of delay between COM port pollings. Since they are handled by
     ///   standard Windows timer accurancy is not overly high
     /// </summary>
     property PollingDelay: word read FPollingDelay write SetPollingDelay default 50;
-    /// <summary>        
+    /// <summary>
     ///   Set to TRUE to enable DTR line on connect and to leave it on until disconnect.
-    ///   Set to FALSE to disable DTR line on connect. 
+    ///   Set to FALSE to disable DTR line on connect.
     /// </summary>
     property EnableDTROnOpen: Boolean read FEnableDTROnOpen write FEnableDTROnOpen default true;
     /// <summary>
@@ -723,11 +763,23 @@ type
     ///   Event to raise when there is data available (input buffer has data)
     ///   (called only if PacketSize <= 0)
     /// </summary>
-    property OnReceiveData: TReceiveDataEvent read FOnReceiveData write FOnReceiveData;
-    /// <summary>        
+    property OnReceiveData: TReceiveDataEvent
+      read   FOnReceiveData
+      write  FOnReceiveData;
+    /// <summary>
     ///   Event to raise when there is data packet available (called only if PacketSize > 0)
     /// </summary>
-    property OnReceivePacket: TReceivePacketEvent read FOnReceivePacket write FOnReceivePacket;
+    property OnReceivePacket: TReceivePacketEvent
+      read   FOnReceivePacket
+      write  FOnReceivePacket;
+
+    /// <summary>
+    ///   Event used to report errors
+    /// </summary>
+    property OnError : TErrorEvent
+      read   GetOnError
+      write  SetOnError;
+
 
     /// <summary>
     ///   Returns the maximum size the receive buffer can be set to in byte
@@ -754,7 +806,8 @@ type
 implementation
 
 uses
-  System.Win.Registry;
+  System.Win.Registry,
+  ErrorCodes;
 
 const
   /// <summary>
@@ -922,7 +975,8 @@ begin
   // Allocate a window handle to catch timer's notification messages
   if not (csDesigning in ComponentState) then
     FNotifyWnd := AllocateHWnd(TimerWndProc);
-
+  // OnError event not set yet
+  FOnError                   := nil;
 end;
 
 destructor TCommPortDriver.Destroy;
@@ -1097,6 +1151,11 @@ begin
   FTempInBuffer := AllocMem(FInBufSize);
   // Adjust the RX packet size
   SetPacketSize(FPacketSize);
+end;
+
+procedure TCommPortDriver.SetOnError(const Value: TErrorEvent);
+begin
+   FOnError := Value;
 end;
 
 // Sets the TX buffer size
@@ -1365,27 +1424,32 @@ begin
   result := cMinTXBufferSize;
 end;
 
+function TCommPortDriver.GetOnError: TErrorEvent;
+begin
+  Result := FOnError;
+end;
+
 // Returns true if polling has not been paused
 function TCommPortDriver.IsPolling: Boolean;
 begin
   Result := FRXPollingPauses <= 0;
 end;
 
-// Pauses polling 
+// Pauses polling
 procedure TCommPortDriver.PausePolling;
 begin
-  // Inc. RX polling pauses counter 
+  // Inc. RX polling pauses counter
   inc(FRXPollingPauses);
 end;
 
-// Re-starts polling (after pause) 
+// Re-starts polling (after pause)
 procedure TCommPortDriver.ContinuePolling;
 begin
-  // Dec. RX polling pauses counter 
+  // Dec. RX polling pauses counter
   dec(FRXPollingPauses);
 end;
 
-// Flush rx/tx buffers 
+// Flush rx/tx buffers
 function TCommPortDriver.FlushBuffers(inBuf, outBuf: Boolean): Boolean;
 var dwAction: DWORD;
 begin
@@ -1422,7 +1486,7 @@ begin
     Result := 0;
 end;
 
-// Returns the output buffer free space or 65535 if not connected 
+// Returns the output buffer free space or 65535 if not connected
 function TCommPortDriver.OutFreeSpace: word;
 var stat: TCOMSTAT;
     errs: DWORD;
@@ -1471,20 +1535,23 @@ begin
       begin
         // Update number of bytes sent
         Result := Result + nSent;
-        // Decrease the count of bytes to send 
+        // Decrease the count of bytes to send
         DataSize := DataSize - nSent;
-        // Inc. data pointer 
+        // Inc. data pointer
         DataPtr := DataPtr + nSent;
-        // Get current time 
+        // Get current time
         t1 := GetTickCount;
         // Continue. This skips the time check below (don't stop
         // trasmitting if the Timeout is set too low)
         continue;
       end;
     end;
-    // Buffer is full. If we are waiting too long then exit 
+    // Buffer is full. If we are waiting too long then exit
     if DWORD(GetTickCount-t1) > Timeout then
+    begin
+      ReportError(cErrSendBufferFull, rErrSendBufferFull);
       exit;
+    end;
   end;
 end;
 
@@ -1566,13 +1633,23 @@ begin
     end;
     // Buffer is empty. If we are waiting too long then exit 
     if (GetTickCount-t1) > FInputTimeout then
+    begin
+      ReportError(cErrReceiveBufferFull, rErrReceiveBufferFull);
       break;
+    end;
   end;
   // Continue polling 
   ContinuePolling;
 end;
 
-// Reads a byte. Returns true if the byte has been read 
+procedure TCommPortDriver.ReportError(ErrorCode: UInt16;
+                                      const ErrorText: string);
+begin
+  if Assigned(FOnError) then
+    FOnError(self, ErrorCode, ErrorText);
+end;
+
+// Reads a byte. Returns true if the byte has been read
 function TCommPortDriver.ReadByte(var Value: byte): Boolean;
 begin
   Result := ReadData(@Value, 1) = 1;
