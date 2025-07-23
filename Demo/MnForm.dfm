@@ -67,8 +67,6 @@ object MainForm: TMainForm
     BevelOuter = bvNone
     Constraints.MinHeight = 100
     TabOrder = 1
-    ExplicitWidth = 676
-    ExplicitHeight = 218
     object IncomingRichEdit: TRichEdit
       Left = 0
       Top = 15
@@ -86,8 +84,6 @@ object MainForm: TMainForm
       ScrollBars = ssBoth
       TabOrder = 0
       WordWrap = False
-      ExplicitWidth = 676
-      ExplicitHeight = 203
     end
     object Panel2: TPanel
       Left = 0
@@ -98,7 +94,6 @@ object MainForm: TMainForm
       BevelOuter = bvNone
       BorderWidth = 2
       TabOrder = 1
-      ExplicitWidth = 676
       object Label1: TLabel
         Left = 2
         Top = 2
@@ -127,8 +122,6 @@ object MainForm: TMainForm
     Constraints.MinHeight = 100
     ParentBiDiMode = False
     TabOrder = 0
-    ExplicitTop = 283
-    ExplicitWidth = 676
     object OutgoingRichEdit: TRichEdit
       Left = 0
       Top = 15
@@ -147,7 +140,6 @@ object MainForm: TMainForm
       TabOrder = 0
       OnKeyDown = OutgoingRichEditKeyDown
       OnKeyPress = OutgoingRichEditKeyPress
-      ExplicitWidth = 676
     end
     object Panel3: TPanel
       Left = 0
@@ -158,7 +150,6 @@ object MainForm: TMainForm
       BevelOuter = bvNone
       BorderWidth = 2
       TabOrder = 1
-      ExplicitWidth = 676
       object Label2: TLabel
         Left = 2
         Top = 2
@@ -187,7 +178,6 @@ object MainForm: TMainForm
       Constraints.MaxHeight = 20
       Constraints.MinHeight = 20
       TabOrder = 2
-      ExplicitWidth = 676
       object StatusPanel: TPanel
         Left = 0
         Top = 0
@@ -217,7 +207,6 @@ object MainForm: TMainForm
         BevelOuter = bvLowered
         Caption = '%s'
         TabOrder = 2
-        ExplicitWidth = 371
       end
     end
   end
@@ -243,7 +232,6 @@ object MainForm: TMainForm
     ShowCaptions = True
     ShowHint = False
     TabOrder = 2
-    ExplicitWidth = 676
     object ConnectToolButton: TToolButton
       Left = 0
       Top = 0

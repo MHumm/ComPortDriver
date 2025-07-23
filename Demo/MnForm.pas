@@ -1,3 +1,19 @@
+{*****************************************************************************
+  The TComportDrv team licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License. A copy of this licence is found in the root directory
+  of this project in the file LICENCE.txt or alternatively at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+*****************************************************************************}
 unit MnForm;
 
 interface
@@ -63,8 +79,11 @@ type
       Shift: TShiftState);
     procedure OT_ClearCmdClick(Sender: TObject);
     procedure OutgoingRichEditKeyPress(Sender: TObject; var Key: Char);
+    /// <summary>
+    ///   Handles all incoming data
+    /// </summary>
     procedure cpDrvReceiveData(Sender: TObject; DataPtr: Pointer;
-      DataSize: Cardinal);
+      DataSize: DWord);
     procedure IT_ClearCmdClick(Sender: TObject);
     procedure QuitTTYToolButtonClick(Sender: TObject);
     procedure HelpAboutCmdClick(Sender: TObject);
@@ -259,9 +278,8 @@ begin
     CannotSendError;
 end;
 
-// Handles incoming data
 procedure TMainForm.cpDrvReceiveData(Sender: TObject; DataPtr: Pointer;
-  DataSize: Cardinal);
+  DataSize: DWord);
 var iLastLine, i: integer;
     s, ss: string;
 begin

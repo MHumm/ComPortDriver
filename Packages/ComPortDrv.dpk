@@ -35,6 +35,7 @@ requires
   rtl;
 
 contains
-  CPDrv in '..\Source\CPDrv.pas';
+  CPDrv in '..\Source\CPDrv.pas',
+  ErrorCodes in '..\Source\ErrorCodes.pas';
 
 end.

@@ -22,8 +22,6 @@ object SettingsForm: TSettingsForm
     BevelOuter = bvNone
     BorderWidth = 2
     TabOrder = 0
-    ExplicitWidth = 310
-    ExplicitHeight = 205
     object SettingsPageControl: TPageControl
       Left = 2
       Top = 2
@@ -32,8 +30,6 @@ object SettingsForm: TSettingsForm
       ActivePage = BaseSettingsTabSheet
       Align = alClient
       TabOrder = 0
-      ExplicitWidth = 306
-      ExplicitHeight = 201
       object BaseSettingsTabSheet: TTabSheet
         Caption = 'Base Settings'
         object Label1: TLabel
