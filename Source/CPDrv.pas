@@ -2,7 +2,7 @@
 //------------------------------------------------------------------------
 // UNIT           : CPDrv.pas
 // CONTENTS       : TCommPortDriver component
-// VERSION        : 3.1
+// VERSION        : 3.2
 // TARGET         : Embarcadero Delphi 10.3 Rio or higher
 // AUTHOR         : Original author: Marco Cocco, updated/enhanced by Markus Humm
 // STATUS         : Open source under Apache 2.0 library
@@ -118,6 +118,20 @@ type
   /// </param>
   TReceivePacketEvent = procedure(Sender: TObject; Packet: pointer; DataSize: DWORD) of object;
 
+  /// <summary>
+  ///   Event used for reporting errors
+  /// </summary>
+  /// <param name="Sender">
+  ///   Object calling this eventhandler
+  /// </param>
+  /// <param name="ErrorCode">
+  ///   Code specifying the error
+  /// </param>
+  /// <param name="ErrorText">
+  ///   Text describing the error, usefull for display purposes
+  /// </param>
+  TErrorEvent = procedure(Sender: TObject; ErrorCode: UInt16; const ErrorText: string) of object;
+
 //------------------------------------------------------------------------
 // Other types
 //------------------------------------------------------------------------
@@ -153,7 +167,7 @@ type
   ///   Non visual component for RS232 communications
   /// </summary>
   TCommPortDriver = class(TComponent)
-  protected
+  strict protected
     /// <summary>
     ///   Device Handle (File Handle)
     /// </summary>
@@ -264,6 +278,10 @@ type
     ///   Windows messages, like a call to MessageDlg.
     /// </summary>
     FIsInOnTimer               : Boolean;
+    /// <summary>
+    ///   Event used to report errors
+    /// </summary>
+    FOnError                   : TErrorEvent;
 
     /// <summary>
     ///   Sets the COM port handle
@@ -395,6 +413,28 @@ type
     ///   apropriate receive callbacks if necessary
     /// </summary>
     procedure TimerWndProc(var msg: TMessage);
+    /// <summary>
+    ///   Returns the OnError Eventhandler
+    /// </summary>
+    function  GetOnError: TErrorEvent;
+    /// <summary>
+    ///   Sets the event to be called if an error is encountered
+    /// </summary>
+    /// <param name="Value">
+    ///   Zu setzender Eventhandler
+    /// </param>
+    procedure SetOnError(const Value: TErrorEvent);
+    /// <summary>
+    ///   Reports an error, if the error event is defined
+    /// </summary>
+    /// <param name="ErrorCode">
+    ///   Code specifying the error
+    /// </param>
+    /// <param name="ErrorText">
+    ///   Text describing the error, usefull for display purposes
+    /// </param>
+    procedure ReportError(ErrorCode       : UInt16;
+                          const ErrorText : string);
   public
     /// <summary>
     ///   Constructor
@@ -488,7 +528,7 @@ type
     ///   Number of bytes sent
     /// </returns>
     function SendDataEx(DataPtr: PAnsiChar; DataSize, Timeout: DWORD): DWORD;
-    /// <summary>        
+    /// <summary>
     ///   Sends a byte. Returns true if the byte has been sent
     /// </summary>        
     /// <param name="Value">
@@ -670,41 +710,41 @@ type
     ///   hfRTSCTS        Request-To-Send/Clear-To-Send
     /// </summary>
     property HwFlow: THwFlowControl read FHwFlow write SetHwFlowControl default hfNONERTSON;
-    /// <summary>        
+    /// <summary>
     ///   Kind of Software Flow Control to use:
     ///   sfNONE          none
-    ///   sfXONXOFF       XON/XOFF 
+    ///   sfXONXOFF       XON/XOFF
     /// </summary>
     property SwFlow: TSwFlowControl read FSwFlow write SetSwFlowControl default sfNONE;
-    /// <summary>        
+    /// <summary>
     ///   Input buffer size in byte (suggested - driver might ignore this setting !)
-    /// <summary>        
+    /// <summary>
     property InBufSize: DWORD read FInBufSize write SetInBufSize default 2048;
-    /// <summary>        
+    /// <summary>
     ///   Output buffer size in byte (suggested - driver usually ignores this setting !)
     /// </summary>
     property OutBufSize: DWORD read FOutBufSize write SetOutBufSize default 2048;
-    /// <summary>        
+    /// <summary>
     ///   RX packet size (this value must be less than InBufSize)
     ///   A value <= 0 means "no packet mode" (i.e. standard mode enabled)
-    /// </summary>        
+    /// </summary>
     property PacketSize: smallint read FPacketSize write SetPacketSize default -1;
-    /// <summary>        
+    /// <summary>
     ///   Timeout (ms) for a complete packet (in RX)
-    /// </summary>        
+    /// </summary>
     property PacketTimeout: integer read FPacketTimeout write SetPacketTimeout default -1;
-    /// <summary>        
+    /// <summary>
     ///   What to do with incomplete packets (in RX)
     /// </summary>
     property PacketMode: TPacketMode read FPacketMode write FPacketMode default pmDiscard;
-    /// <summary>        
-    ///   ms of delay between COM port pollings. Since they are handled by  
+    /// <summary>
+    ///   ms of delay between COM port pollings. Since they are handled by
     ///   standard Windows timer accurancy is not overly high
     /// </summary>
     property PollingDelay: word read FPollingDelay write SetPollingDelay default 50;
-    /// <summary>        
+    /// <summary>
     ///   Set to TRUE to enable DTR line on connect and to leave it on until disconnect.
-    ///   Set to FALSE to disable DTR line on connect. 
+    ///   Set to FALSE to disable DTR line on connect.
     /// </summary>
     property EnableDTROnOpen: Boolean read FEnableDTROnOpen write FEnableDTROnOpen default true;
     /// <summary>
@@ -723,11 +763,23 @@ type
     ///   Event to raise when there is data available (input buffer has data)
     ///   (called only if PacketSize <= 0)
     /// </summary>
-    property OnReceiveData: TReceiveDataEvent read FOnReceiveData write FOnReceiveData;
-    /// <summary>        
+    property OnReceiveData: TReceiveDataEvent
+      read   FOnReceiveData
+      write  FOnReceiveData;
+    /// <summary>
     ///   Event to raise when there is data packet available (called only if PacketSize > 0)
     /// </summary>
-    property OnReceivePacket: TReceivePacketEvent read FOnReceivePacket write FOnReceivePacket;
+    property OnReceivePacket: TReceivePacketEvent
+      read   FOnReceivePacket
+      write  FOnReceivePacket;
+
+    /// <summary>
+    ///   Event used to report errors
+    /// </summary>
+    property OnError : TErrorEvent
+      read   GetOnError
+      write  SetOnError;
+
 
     /// <summary>
     ///   Returns the maximum size the receive buffer can be set to in byte
@@ -754,7 +806,8 @@ type
 implementation
 
 uses
-  System.Win.Registry;
+  System.Win.Registry,
+  ErrorCodes;
 
 const
   /// <summary>
@@ -922,7 +975,8 @@ begin
   // Allocate a window handle to catch timer's notification messages
   if not (csDesigning in ComponentState) then
     FNotifyWnd := AllocateHWnd(TimerWndProc);
-
+  // OnError event not set yet
+  FOnError                   := nil;
 end;
 
 destructor TCommPortDriver.Destroy;
@@ -1019,13 +1073,20 @@ begin
 end;
 
 function TCommPortDriver.SetCommBreak: Boolean;
+var
+  LastError : DWord;
 begin
-  result := false;
+  Result := false;
 
   if not Connected then
     exit;
 
-  result := Winapi.Windows.SetCommBreak(FHandle);
+  Result := Winapi.Windows.SetCommBreak(FHandle);
+  if not Result then
+  begin
+    LastError := GetLastError;
+    ReportError(LastError, Format(rErrSetCommBreakError, [SysErrorMessage(LastError)]));
+  end;
 end;
 
 // Selects the number of data bits
@@ -1043,7 +1104,7 @@ procedure TCommPortDriver.SetStopBits(Value: TStopBits);
 begin
   // Set new stop bits
   FStopBits := Value;
-  // Apply changes 
+  // Apply changes
   if Connected then
     ApplyCOMSettings;
 end;
@@ -1053,7 +1114,7 @@ procedure TCommPortDriver.SetParity(Value: TParity);
 begin
   // Set new parity
   FParity := Value;
-  // Apply changes 
+  // Apply changes
   if Connected then
     ApplyCOMSettings;
 end;
@@ -1063,7 +1124,7 @@ procedure TCommPortDriver.SetHwFlowControl(Value: THwFlowControl);
 begin
   // Set new hardware flow control
   FHwFlow := Value;
-  // Apply changes 
+  // Apply changes
   if Connected then
     ApplyCOMSettings;
 end;
@@ -1073,7 +1134,7 @@ procedure TCommPortDriver.SetSwFlowControl(Value: TSwFlowControl);
 begin
   // Set new software flow control
   FSwFlow := Value;
-  // Apply changes 
+  // Apply changes
   if Connected then
     ApplyCOMSettings;
 end;
@@ -1097,6 +1158,11 @@ begin
   FTempInBuffer := AllocMem(FInBufSize);
   // Adjust the RX packet size
   SetPacketSize(FPacketSize);
+end;
+
+procedure TCommPortDriver.SetOnError(const Value: TErrorEvent);
+begin
+  FOnError := Value;
 end;
 
 // Sets the TX buffer size
@@ -1152,7 +1218,7 @@ begin
   // If new delay is not equal to previous value...
   if Value <> FPollingDelay then
   begin
-    // Stop the timer 
+    // Stop the timer
     if Connected then
       KillTimer(FNotifyWnd, 1);
     // Store new delay value
@@ -1160,14 +1226,16 @@ begin
     // Restart the timer
     if Connected then
       SetTimer(FNotifyWnd, 1, FPollingDelay, nil);
-    // Adjust the packet timeout 
+    // Adjust the packet timeout
     SetPacketTimeout(FPacketTimeout);
   end;
 end;
 
-// Apply COM settings 
+// Apply COM settings
 function TCommPortDriver.ApplyCOMSettings: Boolean;
-var dcb: TDCB;
+var
+  dcb       : TDCB;
+  LastError : DWord;
 begin
   // Do nothing if not connected
   Result := false;
@@ -1177,15 +1245,15 @@ begin
   // ** Setup DCB (Device Control Block) fields ******************************
 
   // Clear all
-  fillchar(dcb, sizeof(dcb), 0);
+  Fillchar(dcb, sizeof(dcb), 0);
   // DCB structure size
   dcb.DCBLength := sizeof(dcb);
   // Baud rate
   dcb.BaudRate := FBaudRateValue;
   // Set fBinary: Win32 does not support non binary mode transfers
-  // (also disable EOF check) 
+  // (also disable EOF check)
   dcb.Flags := dcb_Binary;
-  // Enables the DTR line when the device is opened and leaves it on 
+  // Enables the DTR line when the device is opened and leaves it on
   if EnableDTROnOpen then
     dcb.Flags := dcb.Flags or dcb_DtrControlEnable;
   // Kind of hw flow control to use
@@ -1242,27 +1310,53 @@ begin
   // Apply new settings
   Result := SetCommState(FHandle, dcb);
   if not Result then
+  begin
+    LastError := GetLastError;
+    ReportError(LastError, Format(rErrApplyComSetsError,
+                                  [SysErrorMessage(LastError), 'SetCommSTate']));
     exit;
+  end;
+
   // Flush buffers
   Result := FlushBuffers(true, true);
   if not Result then
+  begin
+    LastError := GetLastError;
+    ReportError(LastError, Format(rErrApplyComSetsError,
+                                  [SysErrorMessage(LastError), 'FlushBuffers']));
     exit;
+  end;
   // Setup buffers size
   Result := SetupComm(FHandle, FInBufSize, FOutBufSize);
+  if not Result then
+  begin
+    LastError := GetLastError;
+    ReportError(LastError, Format(rErrApplyComSetsError,
+                                  [SysErrorMessage(LastError), 'SetupComm']));
+  end;
 end;
 
 function TCommPortDriver.ClearCommBreak: Boolean;
+var
+  LastError : DWord;
 begin
-  result := false;
+  Result := false;
 
   if not Connected then
     exit;
 
-  result := Winapi.Windows.ClearCommBreak(FHandle);
+  Result := Winapi.Windows.ClearCommBreak(FHandle);
+  if not Result then
+  begin
+    LastError := GetLastError;
+    ReportError(LastError, Format(rErrClearCommBreakError, [SysErrorMessage(LastError)]));
+  end;
 end;
 
 function TCommPortDriver.Connect: Boolean;
-var tms: TCOMMTIMEOUTS;
+var
+  tms: TCOMMTIMEOUTS;
+  LastError : DWord;
 begin
   // Do nothing if already connected
   Result := Connected;
@@ -1279,7 +1373,12 @@ begin
                        );
   Result := Connected;
   if not Result then
+  begin
+    LastError := GetLastError;
+    ReportError(LastError, Format(rErrConnectError, [SysErrorMessage(LastError)]));
+
     exit;
+  end;
   // Apply settings
   Result := ApplyCOMSettings;
   if not Result then
@@ -1306,39 +1405,57 @@ begin
   tms.WriteTotalTimeoutConstant := 10;
   // Apply timeouts
   SetCommTimeOuts(FHandle, tms);
-  // Start the timer (used for polling) 
+  // Start the timer (used for polling)
   SetTimer(FNotifyWnd, 1, FPollingDelay, nil);
 end;
 
 procedure TCommPortDriver.Disconnect;
+var
+  LastError : DWord;
 begin
   if Connected then
   begin
     // Stop the timer (used for polling)
     KillTimer(FNotifyWnd, 1);
     // Release the COM port
-    CloseHandle(FHandle);
-    // No more connected 
+    if not CloseHandle(FHandle) then
+    begin
+      LastError := GetLastError;
+      ReportError(LastError, Format(rErrDisconnectError, [SysErrorMessage(LastError)]));
+    end;
+
+    // No more connected
     FHandle := INVALID_HANDLE_VALUE;
   end;
 end;
 
-// Returns true if connected 
+// Returns true if connected
 function TCommPortDriver.Connected: Boolean;
 begin
   Result := FHandle <> INVALID_HANDLE_VALUE;
 end;
 
-// Returns CTS, DSR, RING and RLSD (CD) signals status 
+// Returns CTS, DSR, RING and RLSD (CD) signals status
 function TCommPortDriver.GetLineStatus: TLineStatusSet;
-var dwS: DWORD;
+var
+  dwS: DWORD;
+  LastError : DWord;
 begin
   Result := [];
   // Retrieves modem control-register values.
   // The function fails if the hardware does not support the control-register
   // values.
   if (not Connected) or (not GetCommModemStatus(FHandle, dwS)) then
+  begin
+    if Connected then
+    begin
+      LastError := GetLastError;
+      ReportError(LastError, Format(rErrGetModemStatusError, [SysErrorMessage(LastError)]));
+    end;
+
     exit;
+  end;
+
   if (dwS and MS_CTS_ON)  <> 0 then Result := Result + [lsCTS];
   if (dwS and MS_DSR_ON)  <> 0 then Result := Result + [lsDSR];
   if (dwS and MS_RING_ON) <> 0 then Result := Result + [lsRING];
@@ -1365,29 +1482,36 @@ begin
   result := cMinTXBufferSize;
 end;
 
+function TCommPortDriver.GetOnError: TErrorEvent;
+begin
+  Result := FOnError;
+end;
+
 // Returns true if polling has not been paused
 function TCommPortDriver.IsPolling: Boolean;
 begin
   Result := FRXPollingPauses <= 0;
 end;
 
-// Pauses polling 
+// Pauses polling
 procedure TCommPortDriver.PausePolling;
 begin
-  // Inc. RX polling pauses counter 
+  // Inc. RX polling pauses counter
   inc(FRXPollingPauses);
 end;
 
-// Re-starts polling (after pause) 
+// Re-starts polling (after pause)
 procedure TCommPortDriver.ContinuePolling;
 begin
-  // Dec. RX polling pauses counter 
+  // Dec. RX polling pauses counter
   dec(FRXPollingPauses);
 end;
 
-// Flush rx/tx buffers 
+// Flush rx/tx buffers
 function TCommPortDriver.FlushBuffers(inBuf, outBuf: Boolean): Boolean;
-var dwAction: DWORD;
+var
+  dwAction  : DWORD;
+  LastError : DWord;
 begin
   // Do nothing if not connected
   Result := false;
@@ -1403,34 +1527,56 @@ begin
   Result := PurgeComm(FHandle, dwAction);
   // Used by the RX packet mechanism
   if Result then
-    FFirstByteOfPacketTime := DWORD(-1);
+    FFirstByteOfPacketTime := DWORD(-1)
+  else
+  begin
+    LastError := GetLastError;
+    ReportError(LastError, Format(rErrFlushBuffersError, [SysErrorMessage(LastError)]));
+  end;
 end;
 
 // Returns number of received bytes in the RX buffer
-function TCommPortDriver.CountRX: integer;
+function TCommPortDriver.CountRX: Integer;
 var stat: TCOMSTAT;
     errs: DWORD;
+    LastError : DWord;
 begin
-  // Do nothing if port has not been opened 
+  // Do nothing if port has not been opened
   Result := 65535;
   if not Connected then
     exit;
-  // Get count 
-  ClearCommError(FHandle, errs, @stat);
-  Result := stat.cbInQue;
+  // Get count
+  if ClearCommError(FHandle, errs, @stat) then
+    Result := stat.cbInQue
+  else
+  begin
+    Result := 0;
+
+    LastError := GetLastError;
+    ReportError(LastError, Format(rErrClearCommError1, [SysErrorMessage(LastError)]));
+  end;
 end;
 
-// Returns the output buffer free space or 65535 if not connected 
+// Returns the output buffer free space or 65535 if not connected
 function TCommPortDriver.OutFreeSpace: word;
-var stat: TCOMSTAT;
-    errs: DWORD;
+var
+  stat      : TCOMSTAT;
+  errs      : DWord;
+  LastError : DWord;
 begin
   if not Connected then
     Result := 65535
   else
   begin
-    ClearCommError(FHandle, errs, @stat);
-    Result := FOutBufSize - stat.cbOutQue;
+    if ClearCommError(FHandle, errs, @stat) then
+      Result := FOutBufSize - stat.cbOutQue
+    else
+    begin
+      Result := 0;
+
+      LastError := GetLastError;
+      ReportError(LastError, Format(rErrClearCommError2, [SysErrorMessage(LastError)]));
+    end;
   end;
 end;
 
@@ -1438,7 +1584,8 @@ end;
 // the value specifiend in the OutputTimeout property
 function TCommPortDriver.SendDataEx(DataPtr: PAnsiChar; DataSize, Timeout: DWORD): DWORD;
 var
-  nToSend, nSent, t1: DWORD;
+  nToSend, nSent, t1: DWord;
+  LastError : DWord;
 begin
   // Do nothing if port has not been opened
   Result := 0;
@@ -1461,26 +1608,34 @@ begin
       if nToSend > DataSize then
         nToSend := DataSize;
       // Send
-      WriteFile(FHandle, DataPtr^, nToSend, nSent, nil);
+      if not WriteFile(FHandle, DataPtr^, nToSend, nSent, nil) then
+      begin
+        LastError := GetLastError;
+        ReportError(LastError, Format(rErrSendError, [SysErrorMessage(LastError)]));
+      end;
+
       nSent := abs(nSent);
       if nSent > 0 then
       begin
         // Update number of bytes sent
         Result := Result + nSent;
-        // Decrease the count of bytes to send 
+        // Decrease the count of bytes to send
         DataSize := DataSize - nSent;
-        // Inc. data pointer 
+        // Inc. data pointer
         DataPtr := DataPtr + nSent;
-        // Get current time 
+        // Get current time
         t1 := GetTickCount;
         // Continue. This skips the time check below (don't stop
         // trasmitting if the Timeout is set too low)
         continue;
       end;
     end;
-    // Buffer is full. If we are waiting too long then exit 
+    // Buffer is full. If we are waiting too long then exit
     if DWORD(GetTickCount-t1) > Timeout then
+    begin
+      ReportError(cErrSendBufferFull, rErrSendBufferFull);
       exit;
+    end;
   end;
 end;
 
@@ -1523,31 +1678,38 @@ begin
   Result := SendData(s, len) = len;
 end;
 
-// Reads binary data. Returns number of bytes read 
+// Reads binary data. Returns number of bytes read
 function TCommPortDriver.ReadData(DataPtr: PAnsiChar; MaxDataSize: DWORD): DWORD;
-var nToRead, nRead, t1: DWORD;
+var
+  nToRead, nRead, t1: DWORD;
+  LastError: DWord;
 begin
-  // Do nothing if port has not been opened 
+  // Do nothing if port has not been opened
   Result := 0;
   if not Connected then
     exit;
-  // Pause polling 
+  // Pause polling
   PausePolling;
-  // Current time 
+  // Current time
   t1 := GetTickCount;
-  // Loop until all requested data read or timeout occurred 
+  // Loop until all requested data read or timeout occurred
   while MaxDataSize > 0 do
   begin
-    // Get data bytes count in RX buffer 
+    // Get data bytes count in RX buffer
     nToRead := CountRX;
-    // If input buffer has some data... 
+    // If input buffer has some data...
     if nToRead > 0 then
     begin
-      // Don't read more bytes than we actually have to read 
+      // Don't read more bytes than we actually have to read
       if nToRead > MaxDataSize then
         nToRead := MaxDataSize;
-      // Read 
-      ReadFile(FHandle, DataPtr^, nToRead, nRead, nil);
+      // Read
+      if not ReadFile(FHandle, DataPtr^, nToRead, nRead, nil) then
+      begin
+        LastError := GetLastError;
+        ReportError(LastError, Format(rErrReadError, [SysErrorMessage(LastError)]));
+      end;
+
       // Update number of bytes read 
       Result := Result + nRead;
       // Decrease the count of bytes to read 
@@ -1562,13 +1724,23 @@ begin
     end;
     // Buffer is empty. If we are waiting too long then exit 
     if (GetTickCount-t1) > FInputTimeout then
+    begin
+      ReportError(cErrReceiveBufferFull, rErrReceiveBufferFull);
       break;
+    end;
   end;
   // Continue polling 
   ContinuePolling;
 end;
 
-// Reads a byte. Returns true if the byte has been read 
+procedure TCommPortDriver.ReportError(ErrorCode: UInt16;
+                                      const ErrorText: string);
+begin
+  if Assigned(FOnError) then
+    FOnError(self, ErrorCode, ErrorText);
+end;
+
+// Reads a byte. Returns true if the byte has been read
 function TCommPortDriver.ReadByte(var Value: byte): Boolean;
 begin
   Result := ReadData(@Value, 1) = 1;
@@ -1598,10 +1770,12 @@ begin
     EscapeCommFunction(FHandle, funcs[onOff]);
 end;
 
-// COM port polling proc 
+// COM port polling proc
 procedure TCommPortDriver.TimerWndProc(var msg: TMessage);
-var nRead, nToRead, nToReadBuf, dummy: DWORD;
-    comStat: TCOMSTAT;
+var
+  nRead, nToRead, nToReadBuf, dummy: DWord;
+  comStat   : TCOMSTAT;
+  LastError : DWord;
 begin
   if (msg.Msg = WM_TIMER) and Connected then
   begin
@@ -1615,70 +1789,92 @@ begin
           exit;
         // If PacketSize is > 0 then raise the OnReceiveData event only if the RX
         // buffer has at least PacketSize bytes in it.
-        ClearCommError(FHandle, dummy, @comStat);
-        if FPacketSize > 0 then
+        if ClearCommError(FHandle, dummy, @comStat) then
         begin
-          // Complete packet received ?
-          if DWORD(comStat.cbInQue) >= DWORD(FPacketSize) then
+          if FPacketSize > 0 then
           begin
-            repeat
-              // Read the packet and pass it to the app
+            // Complete packet received ?
+            if DWORD(comStat.cbInQue) >= DWORD(FPacketSize) then
+            begin
+              repeat
+                // Read the packet and pass it to the app
+                nRead := 0;
+                if ReadFile(FHandle, FTempInBuffer^, FPacketSize, nRead, nil) then
+                begin
+                  if (nRead <> 0) and Assigned(FOnReceivePacket) then
+                    FOnReceivePacket(Self, FTempInBuffer, nRead);
+                end
+                else
+                begin
+                  LastError := GetLastError;
+                  ReportError(LastError, Format(rErrReadError, [SysErrorMessage(LastError)]));
+                end;
+
+                // Adjust time
+                //if comStat.cbInQue >= FPacketSize then
+                  FFirstByteOfPacketTime := FFirstByteOfPacketTime +
+                                            DelayForRX(FPacketSize);
+                comStat.cbInQue := comStat.cbInQue - WORD(FPacketSize);
+                if comStat.cbInQue = 0 then
+                  FFirstByteOfPacketTime := DWORD(-1);
+              until DWORD(comStat.cbInQue) < DWORD(FPacketSize);
+              // Done
+              exit;
+            end;
+            // Handle packet timeouts
+            if (FPacketTimeout > 0) and (FFirstByteOfPacketTime <> DWORD(-1)) and
+               (GetTickCount - FFirstByteOfPacketTime > DWORD(FPacketTimeout)) then
+            begin
               nRead := 0;
-              if ReadFile(FHandle, FTempInBuffer^, FPacketSize, nRead, nil) then
-                if (nRead <> 0) and Assigned(FOnReceivePacket) then
+              // Read the "incomplete" packet
+              if ReadFile(FHandle, FTempInBuffer^, comStat.cbInQue, nRead, nil) then
+              begin
+                // If PacketMode is not pmDiscard then pass the packet to the app
+                if (FPacketMode <> pmDiscard) and (nRead <> 0) and Assigned(FOnReceivePacket) then
                   FOnReceivePacket(Self, FTempInBuffer, nRead);
-              // Adjust time
-              //if comStat.cbInQue >= FPacketSize then
-                FFirstByteOfPacketTime := FFirstByteOfPacketTime +
-                                          DelayForRX(FPacketSize);
-              comStat.cbInQue := comStat.cbInQue - WORD(FPacketSize);
-              if comStat.cbInQue = 0 then
-                FFirstByteOfPacketTime := DWORD(-1);
-            until DWORD(comStat.cbInQue) < DWORD(FPacketSize);
+              end
+              else
+              begin
+                LastError := GetLastError;
+                ReportError(LastError, Format(rErrReadError, [SysErrorMessage(LastError)]));
+              end;
+
+              // Restart waiting for a packet
+              FFirstByteOfPacketTime := DWORD(-1);
+              // Done
+              exit;
+            end;
+            // Start time
+            if (comStat.cbInQue > 0) and (FFirstByteOfPacketTime = DWORD(-1)) then
+              FFirstByteOfPacketTime := GetTickCount;
             // Done
             exit;
           end;
-          // Handle packet timeouts
-          if (FPacketTimeout > 0) and (FFirstByteOfPacketTime <> DWORD(-1)) and
-             (GetTickCount - FFirstByteOfPacketTime > DWORD(FPacketTimeout)) then
+
+          // Standard data handling
+          nRead   := 0;
+          nToRead := comStat.cbInQue;
+
+          while (nToRead > 0) do
           begin
-            nRead := 0;
-            // Read the "incomplete" packet
-            if ReadFile(FHandle, FTempInBuffer^, comStat.cbInQue, nRead, nil) then
-              // If PacketMode is not pmDiscard then pass the packet to the app
-              if (FPacketMode <> pmDiscard) and (nRead <> 0) and Assigned(FOnReceivePacket) then
-                FOnReceivePacket(Self, FTempInBuffer, nRead);
-            // Restart waiting for a packet
-            FFirstByteOfPacketTime := DWORD(-1);
-            // Done
-            exit;
+            nToReadBuf := nToRead;
+            if (nToReadBuf > FInBufSize) then
+              nToReadBuf := FInBufSize;
+
+            if ReadFile(FHandle, FTempInBuffer^, nToReadBuf, nRead, nil) then
+            begin
+              if (nRead <> 0) and Assigned(FOnReceiveData) then
+                FOnReceiveData(Self, FTempInBuffer, nRead);
+            end
+            else
+            begin
+              LastError := GetLastError;
+              ReportError(LastError, Format(rErrReadError, [SysErrorMessage(LastError)]));
+              break;
+            end;
+
+            dec(nToRead, nRead);
           end;
-          // Start time
-          if (comStat.cbInQue > 0) and (FFirstByteOfPacketTime = DWORD(-1)) then
-            FFirstByteOfPacketTime := GetTickCount;
-          // Done
-          exit;
-        end;
-
-        // Standard data handling
-        nRead   := 0;
-        nToRead := comStat.cbInQue;
-
-        while (nToRead > 0) do
-        begin
-          nToReadBuf := nToRead;
-          if (nToReadBuf > FInBufSize) then
-            nToReadBuf := FInBufSize;
-
-          if ReadFile(FHandle, FTempInBuffer^, nToReadBuf, nRead, nil) then
-          begin
-            if (nRead <> 0) and Assigned(FOnReceiveData) then
-              FOnReceiveData(Self, FTempInBuffer, nRead);
-          end
-          else
-            break;
-
-          dec(nToRead, nRead);
         end;
       finally
         // Allow calling this timer event again
@@ -1696,23 +1892,28 @@ var
   N : TStringList;
   Reg: TRegistry;
 begin
-  Assert(Assigned(ComPorts), 'Not created list passed');
+  Assert(Assigned(ComPorts), 'Uncreated list passed');
 
   N   := TStringList.Create;
   Reg := Tregistry.Create;
   try
-    Reg.RootKey := HKEY_LOCAL_MACHINE;
-    Reg.Access := KEY_READ;
-    If Reg.KeyExists('HARDWARE\DEVICEMAP\SERIALCOMM') Then
-      If Reg.OpenKey('HARDWARE\DEVICEMAP\SERIALCOMM', False) Then
-      Begin
-        Reg.GetValueNames(N);
-        for I := 0 to N.count - 1 do
-        begin
-          if (ComPorts.IndexOf(Reg.ReadString(N[I])) = -1) then
-            ComPorts.Add(Reg.ReadString(N[I]));
+    try
+      Reg.RootKey := HKEY_LOCAL_MACHINE;
+      Reg.Access := KEY_READ;
+      If Reg.KeyExists('HARDWARE\DEVICEMAP\SERIALCOMM') Then
+        If Reg.OpenKey('HARDWARE\DEVICEMAP\SERIALCOMM', False) Then
+        Begin
+          Reg.GetValueNames(N);
+          for I := 0 to N.count - 1 do
+          begin
+            if (ComPorts.IndexOf(Reg.ReadString(N[I])) = -1) then
+              ComPorts.Add(Reg.ReadString(N[I]));
+          end;
         end;
-      end;
+    except
+      on E:Exception do
+        ReportError(cErrEnumComPorts, Format(rErrEnumComPortsError, [e.Message]))
+    end;
   finally
     Reg.Free;
     N.Free;

@@ -9,3 +9,6 @@ Copyright (c) 1996-2000 by d3k Software Company.
 
 FOR UPDATES    : https://github.com/MHumm/ComPortDriver
 BUG REPORTS    : https://github.com/MHumm/ComPortDriver/issues
+
+Thanks to the following contributors:
+Kirold
