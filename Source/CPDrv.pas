@@ -1076,7 +1076,7 @@ function TCommPortDriver.SetCommBreak: Boolean;
 var
   LastError : DWord;
 begin
-  result := false;
+  Result := false;
 
   if not Connected then
     exit;
