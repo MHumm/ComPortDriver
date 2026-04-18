@@ -5,7 +5,8 @@ uses
   MnForm in 'MnForm.pas' {MainForm},
   SettingsDlg in 'SettingsDlg.pas' {SettingsForm},
   AboutTTY in 'AboutTTY.pas' {AboutBoxForm},
-  CPDrv in '..\Source\CPDrv.pas';
+  CPDrv in '..\Source\CPDrv.pas',
+  ErrorCodes in '..\Source\ErrorCodes.pas';
 
 {$R *.RES}
 
