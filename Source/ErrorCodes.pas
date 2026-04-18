@@ -8,7 +8,7 @@ const
   /// </summary>
   cErrSendBufferFull    = 1;
   /// <summary>
-  ///   More data received than could stored in the receive buffer
+  ///   More data received than could be stored in the receive buffer
   /// </summary>
   cErrReceiveBufferFull = 2;
   /// <summary>
