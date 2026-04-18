@@ -166,6 +166,7 @@ type
   /// <summary>
   ///   Non visual component for RS232 communications
   /// </summary>
+  [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidWin64x or pidWinArm64EC)]
   TCommPortDriver = class(TComponent)
   strict protected
     /// <summary>
