@@ -3,7 +3,7 @@
 
 
 Win32/64 VCL and Firemonkey COM-Port component for Delphi
-Designed for Delphi 10.4.1 Rio or higher, including 12.3 Athens.
+Designed for Delphi 10.4.1 Rio or higher, including 13.1 Florence.
 
 
 
@@ -15,28 +15,36 @@ versions as well. The code found in SerialPorts.pas is not working yet.
 
 
 
+Changes in this V3.3 release compared with 3.2
+
+* Added support for Delphi 13.1 Florence
+* Added support for the new WinArm64EC target
+* Fixed uses list of demo application
+
+
+
 Changes in this V3.2 release compared with 3.1.x:
 
 * added an OnError event, which will be called if an error occurs like trying to send data quicker than
-  possible with the selected baudrate or an operating system reported error
+possible with the selected baudrate or an operating system reported error
 * fixed a bug where not checking the return value of a system all could lead to problems when the
-  used serial device got disconnected during processing of the data received
+used serial device got disconnected during processing of the data received
 * fixed a bug where not checking the return value of a system all could lead to problems when the
-  used serial device got disconnected during sending of data
+used serial device got disconnected during sending of data
 * fixed a bug where not checking the return value of a system all could lead to problems in the
-  polling timer event
+polling timer event
 
 
 
 Changes in the V3.1.x release compared with 2.1:
 
 * fix non packet mode for higher baudrates: the old version didn't check if the buffer the received data
-  shall be written into is large enough. The new version calls the received event in a loop until all data
-  has been received and signalled to avoid memory corruption
+shall be written into is large enough. The new version calls the received event in a loop until all data
+has been received and signalled to avoid memory corruption
 * the maximum buffer size has been increased from 8192 (8 kb) to 65536 byte (64 kb)
 * SetCommBreak and ClearCommBreak functions for sending a break signal have been added
 * EnumComPorts to get a list of available COM-ports has been added. This is a list of port names only,
-  without the description or friendly name.
+without the description or friendly name.
 * Properties for getting the minimum and maximum transmit and receive buffer sizes have been added
 * The source code is XMLDOC commented now
 * changed license to Apache 2.0
