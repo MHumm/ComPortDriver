@@ -1,0 +1,265 @@
+﻿{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:98fa24ed-34a2-4480-9cef-0ef3dd84ffbb",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-10-25T09:15:40Z",
+    "component": {
+      "type": "library",
+      "name": "ComPortDrv",
+      "version": "3.3",
+      "bom-ref": "ComPortDrv",
+      "supplier": {
+        "name": "Markus Humm",
+        "url": [
+          "https://github.com/MHumm/ComPortDriver"
+        ]
+      },
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0",
+            "acknowledgement": "concluded"
+          }
+        },
+        {
+          "license": {
+            "id": "Apache-2.0",
+            "acknowledgement": "declared"
+          }
+        }
+      ],
+      "purl": "pkg:github/MHumm/ComPortDriver@3.3"
+    },
+    "manufacturer": {
+      "contact": [
+        {
+          "email": "markus.humm@gmail.com"
+        }
+      ]
+    },
+    "properties": [
+      {
+        "name": "net.developer-experts.dx-comply:document.profile",
+        "value": "library-source"
+      }
+    ],
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "author": "Olaf Monien",
+          "name": "DX.Comply",
+          "version": "2.0.2.0"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "file",
+      "name": "../Source/CPDrv.pas",
+      "version": "3.3",
+      "bom-ref": "comp-0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c63a5ae96b3c63c545abd449cda68b073584fe567657c1e7cef0bcfd48a922fa"
+        },
+        {
+          "alg": "SHA-512",
+          "content": "a61a9e7135993190e4f7e8bd1f2d4cc1dc74b08cac6c26ccac6fe5c59ab2a29f2430f12201809ff60916952825d5903c979b53dfc2abcbfbef206a825bc1bc19"
+        }
+      ],
+      "properties": [
+        {
+          "name": "file:size",
+          "value": "63242"
+        },
+        {
+          "name": "net.developer-experts.dx-comply:relativePath",
+          "value": "../Source/CPDrv.pas"
+        },
+        {
+          "name": "bsi:component:filename",
+          "value": "CPDrv.pas"
+        },
+        {
+          "name": "bsi:component:executable",
+          "value": "non-executable"
+        },
+        {
+          "name": "bsi:component:archive",
+          "value": "no archive"
+        },
+        {
+          "name": "bsi:component:structured",
+          "value": "unstructured"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "name": "../Source/ErrorCodes.pas",
+      "version": "3.3",
+      "bom-ref": "comp-1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "944a0112d55c341192265196184c3f46207421b90da7185b4f6bb769bcf5f2f5"
+        },
+        {
+          "alg": "SHA-512",
+          "content": "cc40fae8befc778cdcb84c3af7e635db139b07e92ae720324ddc9e2229883b93dfa075eed2f1f9f1dd166114cce9f470303cc3363ad4a54608a9be63e9481ecf"
+        }
+      ],
+      "properties": [
+        {
+          "name": "file:size",
+          "value": "1579"
+        },
+        {
+          "name": "net.developer-experts.dx-comply:relativePath",
+          "value": "../Source/ErrorCodes.pas"
+        },
+        {
+          "name": "bsi:component:filename",
+          "value": "ErrorCodes.pas"
+        },
+        {
+          "name": "bsi:component:executable",
+          "value": "non-executable"
+        },
+        {
+          "name": "bsi:component:archive",
+          "value": "no archive"
+        },
+        {
+          "name": "bsi:component:structured",
+          "value": "unstructured"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "name": "../Source/SerialPorts.pas",
+      "version": "3.3",
+      "bom-ref": "comp-2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "16d193ab704b37bddfabf21d81f92b0f3562dfc4a823410fa792ed0ea96e168c"
+        },
+        {
+          "alg": "SHA-512",
+          "content": "7f9170073091fdd2e30787a73f5984e07e9f7928ea2d423747b4b1ddecf0f9a75f2497f7b553472233400e6e654ca92e89887275cd42b0a34739f1a305d642f2"
+        }
+      ],
+      "properties": [
+        {
+          "name": "file:size",
+          "value": "5009"
+        },
+        {
+          "name": "net.developer-experts.dx-comply:relativePath",
+          "value": "../Source/SerialPorts.pas"
+        },
+        {
+          "name": "bsi:component:filename",
+          "value": "SerialPorts.pas"
+        },
+        {
+          "name": "bsi:component:executable",
+          "value": "non-executable"
+        },
+        {
+          "name": "bsi:component:archive",
+          "value": "no archive"
+        },
+        {
+          "name": "bsi:component:structured",
+          "value": "unstructured"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "name": "ComPortDrv.dpk",
+      "version": "3.3",
+      "bom-ref": "comp-3",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "077c4c6ccc06a21d5c4cf5f421b7eadc5110dcb731329f0ab2be3812eea4fa38"
+        },
+        {
+          "alg": "SHA-512",
+          "content": "a66da373367ac5168300e06437b873791e7d8adf2d9a18f820cd5450707b72feac6fe81d6525a5bfcf03ecd924b2fe0524489af72aca1f80b2b6c42dd2f8dffd"
+        }
+      ],
+      "properties": [
+        {
+          "name": "file:size",
+          "value": "797"
+        },
+        {
+          "name": "net.developer-experts.dx-comply:relativePath",
+          "value": "ComPortDrv.dpk"
+        },
+        {
+          "name": "bsi:component:filename",
+          "value": "ComPortDrv.dpk"
+        },
+        {
+          "name": "bsi:component:executable",
+          "value": "non-executable"
+        },
+        {
+          "name": "bsi:component:archive",
+          "value": "no archive"
+        },
+        {
+          "name": "bsi:component:structured",
+          "value": "unstructured"
+        }
+      ]
+    },
+    {
+      "type": "framework",
+      "name": "rtl",
+      "version": "37.0",
+      "bom-ref": "comp-4"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "ComPortDrv",
+      "dependsOn": [
+        "comp-0",
+        "comp-1",
+        "comp-2",
+        "comp-3",
+        "comp-4"
+      ]
+    }
+  ],
+  "compositions": [
+    {
+      "aggregate": "complete",
+      "dependencies": [
+        "comp-0",
+        "comp-1",
+        "comp-2",
+        "comp-3"
+      ]
+    },
+    {
+      "aggregate": "complete",
+      "dependencies": [
+        "comp-4"
+      ]
+    }
+  ]
+}
